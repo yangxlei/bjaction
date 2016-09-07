@@ -5,7 +5,6 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,6 +81,10 @@ public class BJAction {
 		
 		mListeners.remove(type);
 	}
+
+	public void offAll() {
+		mListeners.clear();
+	}
 	
 	/*
 	 * <p>schema 匹配失败直接返回 false。</br>
@@ -90,7 +93,7 @@ public class BJAction {
 	 * @param url
 	 * @return false 表示未处理. 外部根据返回值再自行处理
 	 */
-	public boolean sendToTarget(Context context, String url) {
+	public boolean sendToTarget(Context context, String url, OnTriggerEvent triggerEvent) {
 		if (! isInitialized()) throw new RuntimeException("还未初始化");
 		
 		if (TextUtils.isEmpty(mSchema))
@@ -102,7 +105,7 @@ public class BJAction {
 				
 				if (! TextUtils.isEmpty(bjUrl.getHost())) {
 					// host 为空，以 url 中的 host 为 action
-					triggerEvent(context, bjUrl.getHost(), bjUrl.getParameters());
+					triggerEvent(context, bjUrl.getHost(), bjUrl.getParameters(), triggerEvent);
 					return true;
 				}
 			} else {
@@ -120,7 +123,7 @@ public class BJAction {
 			} else {
 				if (! mPath.equals(bjUrl.getPath())) {
 					Log.e(TAG, "schema 相同，host 相同， path 不同。 匹配失败");
-					return true;	
+					return true;
 				}
 			}
 			
@@ -135,21 +138,28 @@ public class BJAction {
 				return true;
 			}
 			
-			triggerEvent(context, type, bjUrl.getParameters());
+			triggerEvent(context, type, bjUrl.getParameters(), triggerEvent);
 			
 		} else {
 			return false;
 		}
-		
+
 		return true;
 	}
 	
-	private void triggerEvent(Context context, String type, Map<String, String> payload) {
+	private void triggerEvent(Context context, String type, Map<String, String> payload, OnTriggerEvent triggerEvent) {
 		List<BJActionHandler> list = mListeners.get(type);
-		if (list == null || list.size() == 0) return;
 
-		for (Iterator<BJActionHandler> iterator = list.iterator(); iterator.hasNext(); ) {
-			iterator.next().doPerform(context, type, payload);
-		}
+		ArrayList<BJActionHandler> _list = new ArrayList<>(list);
+		triggerEvent.onTriggerEvent(_list, type, payload);
+//		if (list == null || list.size() == 0) return;
+//
+//		for (Iterator<BJActionHandler> iterator = list.iterator(); iterator.hasNext(); ) {
+//			iterator.next().doPerform(context, type, payload);
+//		}
+	}
+
+	interface OnTriggerEvent {
+		void onTriggerEvent(List<BJActionHandler> handlers, String type, Map<String, String> payload);
 	}
 }
