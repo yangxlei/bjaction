@@ -25,5 +25,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:24.1.1'
 
     compile project(path: ':bjaction')
-    apt project(path: ':compile')
+    apt project(path: ':bjaction-compile')
 }
